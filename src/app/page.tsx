@@ -80,54 +80,52 @@ export default function Home() {
     };
     document.addEventListener('keyup', onCmdEnter);
     return () => document.removeEventListener('keyup', onCmdEnter);
-  }, []);
+  }, [workspace]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const blocklyDiv = document.getElementById('blocklyDiv');
+    const blocklyDiv = document.getElementById('blocklyDiv');
 
-      if (blocklyDiv) {
-        if (!workspace) {
-          // Define custom blocks
-          const customBlocks = defineBlocks();
+    if (blocklyDiv) {
+      if (!blocklyDiv.hasChildNodes()) {
+        // Define custom blocks
+        const customBlocks = defineBlocks();
 
-          // Add custom block to toolbox
-          const updatedToolbox = {
-            ...toolbox,
-            contents: [
-              ...toolbox.contents,
-              {
-                kind: 'category',
-                name: 'Custom Blocks',
-                contents: [
-                  {
-                    kind: 'block',
-                    type: 'my_custom_block',
-                  },
-                ],
-              },
-            ],
-          };
+        // Add custom block to toolbox
+        const updatedToolbox = {
+          ...toolbox,
+          contents: [
+            ...toolbox.contents,
+            {
+              kind: 'category',
+              name: 'Custom Blocks',
+              contents: [
+                {
+                  kind: 'block',
+                  type: 'my_custom_block',
+                },
+              ],
+            },
+          ],
+        };
 
-          const newWorkspace = Blockly.inject(blocklyDiv, {
-            toolbox: updatedToolbox,
-          });
-          setWorkspace(newWorkspace);
+        const newWorkspace = Blockly.inject(blocklyDiv, {
+          toolbox: updatedToolbox,
+        });
+        setWorkspace(newWorkspace);
 
-          const onResize = () => Blockly.svgResize(newWorkspace);
-          window.addEventListener('resize', onResize);
+        const onResize = () => Blockly.svgResize(newWorkspace);
+        window.addEventListener('resize', onResize);
 
-          // Define JavaScript generators for custom blocks
-          concatToBlocklyJS(customBlocks);
+        // Define JavaScript generators for custom blocks
+        concatToBlocklyJS(customBlocks);
 
-          return () => {
-            window.removeEventListener('resize', onResize);
-          };
-        }
-      } else if (workspace) {
-        workspace.dispose();
-        setWorkspace(null);
+        return () => {
+          window.removeEventListener('resize', onResize);
+        };
       }
+    } else if (workspace) {
+      workspace.dispose();
+      setWorkspace(null);
     }
   }, [workspace]);
 

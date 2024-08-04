@@ -8,6 +8,7 @@ import toolbox from '@/blocks/toolbox';
 import { javascriptGenerator } from 'blockly/javascript';
 import { LiveProvider, LiveEditor, LivePreview, LiveError } from 'react-live';
 import { defineBlocks } from '@/blocks/blocks';
+import { parseJSX } from '@/blocks/parse';
 import * as BlocklyJS from 'blockly/javascript';
 
 Blockly.setLocale(En);
@@ -44,6 +45,7 @@ export default function Home() {
   const run = () => {
     let code = javascriptGenerator.workspaceToCode(workspace);
 
+    const returnLineRegex = /return\s+'([^']+)'\s*;/g;
     const componentRegex =
       /function\s+(?<functionName>[a-zA-Z_]\w*)\s*\(\)\s*\{[\s\S]*?\}/gm;
     let match;
@@ -53,6 +55,10 @@ export default function Home() {
         componentNames.push(`<${match.groups.functionName} />`);
       }
     }
+
+    code = code.replace(returnLineRegex, (_, capturedString) => {
+      return `return ${capturedString};`;
+    });
 
     const stateRegex = /^\s*(?<left>\w+)\s*=\s*(?<right>\d+)\s*;\s*$/m;
 
@@ -91,11 +97,8 @@ export default function Home() {
       if (e.keyCode === 13) run();
     };
     document.addEventListener('keyup', onCmdEnter);
-    setInterval(run, 1000);
     return () => {
       document.removeEventListener('keyup', onCmdEnter);
-
-      clearInterval(run);
     };
   }, []);
 
@@ -145,6 +148,10 @@ export default function Home() {
       setWorkspace(null);
     }
   }, [workspace]);
+
+  useEffect(() => {
+    console.log(parseJSX(jsxCode));
+  }, [jsxCode]);
 
   console.log(code);
 
@@ -237,32 +244,12 @@ export default function Home() {
         className="flex-grow p-4"
         style={{ display: view === 'jsx' ? 'block' : 'none' }}
       >
-        {/* <textarea
+        <textarea
           value={jsxCode}
           onChange={(e) => setJsxCode(e.target.value)}
           className="w-full h-full p-2 border rounded"
           placeholder="Enter JSX here"
-        /> */}
-        <LiveProvider
-          code={jsxCode}
-          noInline
-          style={{
-            height: '100vh',
-            width: '100%',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            display: view === 'jsx' ? 'block' : 'none',
-            visibility: view === 'jsx' ? 'visible' : 'hidden',
-          }}
-        >
-          <LiveEditor
-            style={{
-              display: view === 'jsx' ? 'block' : 'none',
-            }}
-            className="font-mono"
-          />
-        </LiveProvider>
+        />
       </div>
     </div>
   );

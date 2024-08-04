@@ -78,7 +78,9 @@ export default function Home() {
       componentNames[componentName] = `<${componentName} />`;
     }
 
-    code = `${code}\n\nrender(<>${componentNames.join('\n')}</>);`;
+    code = `${code}\n\nconst updateUI = () => {\nrender(<>${componentNames.join(
+      '\n'
+    )}</>);\n};\nupdateUI();`;
 
     setComponentNames(componentNames);
     setCode(code);
@@ -89,7 +91,12 @@ export default function Home() {
       if (e.keyCode === 13) run();
     };
     document.addEventListener('keyup', onCmdEnter);
-    return () => document.removeEventListener('keyup', onCmdEnter);
+    setInterval(run, 1000);
+    return () => {
+      document.removeEventListener('keyup', onCmdEnter);
+
+      clearInterval(run);
+    };
   }, []);
 
   useEffect(() => {
@@ -151,7 +158,7 @@ export default function Home() {
           className=" text-black px-4 py-2 rounded-md"
           onClick={() => setView('code')}
         >
-          Code
+          Workspace
         </button>
         |
         <button
@@ -161,7 +168,7 @@ export default function Home() {
           className=" text-black px-4 py-2 rounded-md"
           onClick={() => setView('preview')}
         >
-          Preview
+          Output
         </button>
         |
         <button
@@ -171,7 +178,7 @@ export default function Home() {
           className=" text-black px-4 py-2 rounded-md"
           onClick={() => setView('jsx')}
         >
-          JSX
+          JSX Editor
         </button>
         |
         <button
@@ -206,21 +213,56 @@ export default function Home() {
           visibility: view === 'preview' ? 'visible' : 'hidden',
         }}
       >
-        <LiveEditor className="font-mono" />
-        <LivePreview className="border-2 border-black p-16 m-3" />
-        <LiveError className="text-red-800 bg-red-100 mt-2" />
+        <LiveEditor
+          style={{
+            display: view === 'preview' ? 'block' : 'none',
+          }}
+          className="font-mono"
+        />
+        <LivePreview
+          style={{
+            display: view === 'preview' || view === 'code' ? 'block' : 'none',
+          }}
+          className="border-2 border-black p-16 m-3"
+        />
+        <LiveError
+          style={{
+            display: view === 'preview' ? 'block' : 'none',
+          }}
+          className="text-red-800 bg-red-100 mt-2"
+        />
       </LiveProvider>
 
       <div
         className="flex-grow p-4"
         style={{ display: view === 'jsx' ? 'block' : 'none' }}
       >
-        <textarea
+        {/* <textarea
           value={jsxCode}
           onChange={(e) => setJsxCode(e.target.value)}
           className="w-full h-full p-2 border rounded"
           placeholder="Enter JSX here"
-        />
+        /> */}
+        <LiveProvider
+          code={jsxCode}
+          noInline
+          style={{
+            height: '100vh',
+            width: '100%',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            display: view === 'jsx' ? 'block' : 'none',
+            visibility: view === 'jsx' ? 'visible' : 'hidden',
+          }}
+        >
+          <LiveEditor
+            style={{
+              display: view === 'jsx' ? 'block' : 'none',
+            }}
+            className="font-mono"
+          />
+        </LiveProvider>
       </div>
     </div>
   );

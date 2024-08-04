@@ -6,7 +6,7 @@ import 'blockly/blocks';
 import * as En from 'blockly/msg/en';
 import toolbox from '@/blocks/toolbox';
 import { javascriptGenerator } from 'blockly/javascript';
-import { LiveProvider, LiveEditor, LivePreview } from 'react-live';
+import { LiveProvider, LiveEditor, LivePreview, LiveError } from 'react-live';
 import { defineBlocks } from '@/blocks/blocks';
 import * as BlocklyJS from 'blockly/javascript';
 
@@ -41,60 +41,60 @@ export default function Home() {
   const [view, setView] = useState('code');
   const [jsxCode, setJsxCode] = useState('');
 
+  const run = () => {
+    let code = javascriptGenerator.workspaceToCode(workspace);
+
+    const componentRegex =
+      /function\s+(?<functionName>[a-zA-Z_]\w*)\s*\(\)\s*\{[\s\S]*?\}/gm;
+    let match;
+    let componentNames = [];
+    while ((match = componentRegex.exec(code)) !== null) {
+      if (isCapitalized(match.groups.functionName)) {
+        componentNames.push(match.groups.functionName);
+      }
+    }
+
+    const stateRegex = /^\s*(?<left>\w+)\s*=\s*(?<right>\d+)\s*;\s*$/m;
+
+    const stateNames = [];
+    const lines = code.split('\n');
+    lines.forEach((line, index) => {
+      const match = line.match(stateRegex);
+      if (match) {
+        const left = match.groups.left;
+        stateNames.push(left);
+        lines[index] = line.replace(
+          line,
+          `let [${left}, set${capitalize(left)}] = React.useState(${
+            match.groups.right
+          });`
+        );
+      }
+    });
+
+    code = lines.join('\n');
+
+    for (const stateName of stateNames) {
+      code = code.replace(`var ${stateName};`, '');
+    }
+
+    for (const componentName of componentNames) {
+      componentNames[componentName] = `<${componentName} />`;
+    }
+
+    code = `${code}\n\nrender(<>${componentNames.join('\n')}</>);`;
+
+    setComponentNames(componentNames);
+    setCode(code);
+  };
+
   useEffect(() => {
     const onCmdEnter = (e) => {
-      if (e.keyCode === 13) {
-        let code = javascriptGenerator.workspaceToCode(workspace);
-
-        const componentRegex =
-          /function\s+(?<functionName>[a-zA-Z_]\w*)\s*\(\)\s*\{[\s\S]*?\}/gm;
-        let match;
-        let componentNames = [];
-        while ((match = componentRegex.exec(code)) !== null) {
-          if (isCapitalized(match.groups.functionName)) {
-            componentNames.push(match.groups.functionName);
-          }
-        }
-
-        const stateRegex = /^\s*(?<left>\w+)\s*=\s*(?<right>\d+)\s*;\s*$/m;
-
-        const stateNames = [];
-        const lines = code.split('\n');
-        lines.forEach((line, index) => {
-          const match = line.match(stateRegex);
-          if (match) {
-            const left = match.groups.left;
-            stateNames.push(left);
-            lines[index] = line.replace(
-              line,
-              `let [${left}, set${capitalize(left)}] = React.useState(${
-                match.groups.right
-              });`
-            );
-          }
-        });
-
-        code = lines.join('\n');
-
-        code = `import React from 'react';\n${code}`;
-
-        for (const stateName of stateNames) {
-          code = code.replace(`var ${stateName};`);
-        }
-
-        for (const componentName of componentNames) {
-          componentNames[componentName] = `<${componentName} />`;
-        }
-
-        code = `${code}\n\nrender(<>${componentNames.join('\n')}</>);`;
-
-        setComponentNames(componentNames);
-        setCode(lines.join('\n'));
-      }
+      if (e.keyCode === 13) run();
     };
     document.addEventListener('keyup', onCmdEnter);
     return () => document.removeEventListener('keyup', onCmdEnter);
-  }, [workspace]);
+  }, []);
 
   useEffect(() => {
     const blocklyDiv = document.getElementById('blocklyDiv');
@@ -143,6 +143,8 @@ export default function Home() {
     }
   }, [workspace]);
 
+  console.log(code);
+
   return (
     <div className="flex flex-col h-screen">
       <div>
@@ -175,6 +177,16 @@ export default function Home() {
         >
           JSX
         </button>
+        |
+        <button
+          style={{
+            fontWeight: view === 'jsx' ? 'bold' : 'normal',
+          }}
+          className=" ml-5 bg-green-500 text-black px-2 rounded-md hover:bg-green-400 active:bg-green-100 tranistion-all duration-300 active:scale-150"
+          onClick={run}
+        >
+          Run
+        </button>
       </div>
       <div
         id="blocklyDiv"
@@ -187,6 +199,7 @@ export default function Home() {
       ></div>
       <LiveProvider
         code={code}
+        noInline
         style={{
           height: '100vh',
           width: '100%',
@@ -197,8 +210,10 @@ export default function Home() {
         }}
       >
         <LiveEditor className="font-mono" />
-        <LivePreview />
+        <LivePreview className="border-2 border-black p-16 m-3" />
+        <LiveError className="text-red-800 bg-red-100 mt-2" />
       </LiveProvider>
+
       <div
         className="flex-grow p-4"
         style={{ display: view === 'jsx' ? 'block' : 'none' }}

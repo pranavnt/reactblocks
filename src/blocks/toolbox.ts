@@ -864,12 +864,6 @@ let toolbox = {
       custom: 'PROCEDURE',
       categorystyle: 'procedure_category',
     },
-    {
-      kind: 'category',
-      name: 'my test!!',
-      custom: 'PROCEDURE',
-      categorystyle: 'procedure_category',
-    },
   ],
 };
 

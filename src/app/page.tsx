@@ -9,6 +9,19 @@ import { javascriptGenerator } from 'blockly/javascript';
 import { LiveProvider, LiveEditor, LivePreview } from 'react-live';
 Blockly.setLocale(En);
 
+function concatToBlocklyJS(blocks) {
+  if (Array.isArray(blocks)) {
+    blocks.forEach((block) => {
+      if (block && block.type && block.javascriptGenerator) {
+        BlocklyJS.javascriptGenerator.forBlock[block.type] =
+          block.javascriptGenerator;
+      }
+    });
+  } else {
+    console.warn('defineBlocks did not return an array of blocks');
+  }
+}
+
 const capitalize = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
@@ -18,9 +31,7 @@ export default function Home() {
   const [code, setCode] = useState(``);
   const [componentNames, setComponentNames] = useState([]);
 
-  // on cmd + enter, run the code
   useEffect(() => {
-    const workspace = Blockly.getMainWorkspace();
     const onCmdEnter = (e) => {
       if (e.keyCode === 13) {
         let code = javascriptGenerator.workspaceToCode(workspace);
@@ -55,9 +66,8 @@ export default function Home() {
 
         code = `import React from 'react';\n${code}`;
 
-
         for (const stateName of stateNames) {
-          code = code.replace(`var ${stateName};`)
+          code = code.replace(`var ${stateName};`);
         }
 
         setComponentNames(componentNames);
@@ -72,21 +82,50 @@ export default function Home() {
     if (typeof window !== 'undefined') {
       const blocklyDiv = document.getElementById('blocklyDiv');
 
-      // Only initialize Blockly if the div exists and it hasn't been initialized yet
-      if (blocklyDiv && blocklyDiv.children.length === 0) {
-        const workspace = Blockly.inject(blocklyDiv, {
-          toolbox: toolbox,
-        });
+      if (!isJSX && blocklyDiv) {
+        if (!workspace) {
+          // Define custom blocks
+          const customBlocks = defineBlocks();
 
-        // Resize Blockly when the window is resized
-        const onResize = () => Blockly.svgResize(workspace);
-        window.addEventListener('resize', onResize);
+          // Add custom block to toolbox
+          const updatedToolbox = {
+            ...toolbox,
+            contents: [
+              ...toolbox.contents,
+              {
+                kind: 'category',
+                name: 'Custom Blocks',
+                contents: [
+                  {
+                    kind: 'block',
+                    type: 'my_custom_block',
+                  },
+                ],
+              },
+            ],
+          };
 
-        // Return a cleanup function to remove the resize listener
-        return () => window.removeEventListener('resize', onResize);
+          const newWorkspace = Blockly.inject(blocklyDiv, {
+            toolbox: updatedToolbox,
+          });
+          setWorkspace(newWorkspace);
+
+          const onResize = () => Blockly.svgResize(newWorkspace);
+          window.addEventListener('resize', onResize);
+
+          // Define JavaScript generators for custom blocks
+          concatToBlocklyJS(customBlocks);
+
+          return () => {
+            window.removeEventListener('resize', onResize);
+          };
+        }
+      } else if (workspace) {
+        workspace.dispose();
+        setWorkspace(null);
       }
     }
-  }, []);
+  }, [isJSX, workspace]);
 
   return (
     <>

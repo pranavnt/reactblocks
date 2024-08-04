@@ -50,7 +50,7 @@ export default function Home() {
     let componentNames = [];
     while ((match = componentRegex.exec(code)) !== null) {
       if (isCapitalized(match.groups.functionName)) {
-        componentNames.push(match.groups.functionName);
+        componentNames.push(`<${match.groups.functionName} />`);
       }
     }
 
@@ -73,10 +73,6 @@ export default function Home() {
     });
 
     code = lines.join('\n');
-
-    for (const stateName of stateNames) {
-      code = code.replace(`var ${stateName};`, '');
-    }
 
     for (const componentName of componentNames) {
       componentNames[componentName] = `<${componentName} />`;
@@ -207,6 +203,7 @@ export default function Home() {
           top: 0,
           left: 0,
           display: view === 'preview' ? 'block' : 'none',
+          visibility: view === 'preview' ? 'visible' : 'hidden',
         }}
       >
         <LiveEditor className="font-mono" />

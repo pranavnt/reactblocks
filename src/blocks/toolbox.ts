@@ -589,7 +589,7 @@ let toolbox = {
               },
             },
           },
-  
+
           {
             type: 'text_print',
             kind: 'block',
@@ -661,7 +661,7 @@ let toolbox = {
           {
             type: 'lists_indexOf',
             kind: 'block',
-  
+
             fields: {
               END: 'FIRST',
             },
@@ -741,7 +741,7 @@ let toolbox = {
           {
             type: 'lists_split',
             kind: 'block',
-  
+
             fields: {
               MODE: 'SPLIT',
             },
@@ -759,7 +759,7 @@ let toolbox = {
           {
             type: 'lists_sort',
             kind: 'block',
-  
+
             fields: {
               TYPE: 'NUMERIC',
               DIRECTION: '1',
@@ -866,5 +866,5 @@ let toolbox = {
       },
     ],
   };
-  
+
   export default toolbox;

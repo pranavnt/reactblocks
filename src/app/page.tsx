@@ -7,6 +7,9 @@ import * as En from 'blockly/msg/en';
 import toolbox from '@/blocks/toolbox';
 import { javascriptGenerator } from 'blockly/javascript';
 import { LiveProvider, LiveEditor, LivePreview } from 'react-live';
+import { defineBlocks } from '@/blocks/blocks';
+import * as BlocklyJS from 'blockly/javascript';
+
 Blockly.setLocale(En);
 
 function concatToBlocklyJS(blocks) {
@@ -30,6 +33,7 @@ export default function Home() {
   const [showCode, setShowCode] = useState(true);
   const [code, setCode] = useState(``);
   const [componentNames, setComponentNames] = useState([]);
+  const [workspace, setWorkspace] = useState(null);
 
   useEffect(() => {
     const onCmdEnter = (e) => {
@@ -82,7 +86,7 @@ export default function Home() {
     if (typeof window !== 'undefined') {
       const blocklyDiv = document.getElementById('blocklyDiv');
 
-      if (!isJSX && blocklyDiv) {
+      if (blocklyDiv) {
         if (!workspace) {
           // Define custom blocks
           const customBlocks = defineBlocks();
@@ -125,7 +129,7 @@ export default function Home() {
         setWorkspace(null);
       }
     }
-  }, [isJSX, workspace]);
+  }, [workspace]);
 
   return (
     <>

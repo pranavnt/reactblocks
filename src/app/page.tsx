@@ -29,11 +29,17 @@ const capitalize = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
+const isCapitalized = (str: string) => {
+  return str.charAt(0) === str.charAt(0).toUpperCase();
+};
+
 export default function Home() {
   const [showCode, setShowCode] = useState(true);
   const [code, setCode] = useState(``);
   const [componentNames, setComponentNames] = useState([]);
   const [workspace, setWorkspace] = useState(null);
+  const [view, setView] = useState('code');
+  const [jsxCode, setJsxCode] = useState('');
 
   useEffect(() => {
     const onCmdEnter = (e) => {
@@ -43,9 +49,11 @@ export default function Home() {
         const componentRegex =
           /function\s+(?<functionName>[a-zA-Z_]\w*)\s*\(\)\s*\{[\s\S]*?\}/gm;
         let match;
-        const componentNames = [];
+        let componentNames = [];
         while ((match = componentRegex.exec(code)) !== null) {
-          componentNames.push(match.groups.functionName);
+          if (isCapitalized(match.groups.functionName)) {
+            componentNames.push(match.groups.functionName);
+          }
         }
 
         const stateRegex = /^\s*(?<left>\w+)\s*=\s*(?<right>\d+)\s*;\s*$/m;
@@ -73,6 +81,12 @@ export default function Home() {
         for (const stateName of stateNames) {
           code = code.replace(`var ${stateName};`);
         }
+
+        for (const componentName of componentNames) {
+          componentNames[componentName] = `<${componentName} />`;
+        }
+
+        code = `${code}\n\nrender(<>${componentNames.join('\n')}</>);`;
 
         setComponentNames(componentNames);
         setCode(lines.join('\n'));
@@ -130,8 +144,47 @@ export default function Home() {
   }, [workspace]);
 
   return (
-    <>
-      <div id="blocklyDiv" style={{ height: '100vh', width: '100%' }}></div>
+    <div className="flex flex-col h-screen">
+      <div>
+        <button
+          style={{
+            fontWeight: view === 'code' ? 'bold' : 'normal',
+          }}
+          className=" text-black px-4 py-2 rounded-md"
+          onClick={() => setView('code')}
+        >
+          Code
+        </button>
+        |
+        <button
+          style={{
+            fontWeight: view === 'preview' ? 'bold' : 'normal',
+          }}
+          className=" text-black px-4 py-2 rounded-md"
+          onClick={() => setView('preview')}
+        >
+          Preview
+        </button>
+        |
+        <button
+          style={{
+            fontWeight: view === 'jsx' ? 'bold' : 'normal',
+          }}
+          className=" text-black px-4 py-2 rounded-md"
+          onClick={() => setView('jsx')}
+        >
+          JSX
+        </button>
+      </div>
+      <div
+        id="blocklyDiv"
+        className="flex-grow"
+        style={{
+          height: '100vh',
+          width: '100%',
+          display: view === 'code' ? 'block' : 'none',
+        }}
+      ></div>
       <LiveProvider
         code={code}
         style={{
@@ -140,11 +193,23 @@ export default function Home() {
           position: 'absolute',
           top: 0,
           left: 0,
+          display: view === 'preview' ? 'block' : 'none',
         }}
       >
         <LiveEditor className="font-mono" />
         <LivePreview />
       </LiveProvider>
-    </>
+      <div
+        className="flex-grow p-4"
+        style={{ display: view === 'jsx' ? 'block' : 'none' }}
+      >
+        <textarea
+          value={jsxCode}
+          onChange={(e) => setJsxCode(e.target.value)}
+          className="w-full h-full p-2 border rounded"
+          placeholder="Enter JSX here"
+        />
+      </div>
+    </div>
   );
 }
